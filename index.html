@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interactive Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+        #downloadBtn {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Interactive Map</h1>
+    <div id="map"></div>
+    <button id="downloadBtn">Download Polygon Coordinates</button>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([51.505, -0.09], 13);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+        }).addTo(map);
+
+        // Initialize the FeatureGroup to store editable layers
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        // Initialize the draw control and pass it the FeatureGroup of editable layers
+        var drawControl = new L.Control.Draw({
+            edit: {
+                featureGroup: drawnItems
+            }
+        });
+        map.addControl(drawControl);
+
+        // Variable to store polygon coordinates
+        var polygonCoordinates = [];
+
+        // Event handler for when a new layer (polygon) is created
+        map.on(L.Draw.Event.CREATED, function (event) {
+            var layer = event.layer;
+            drawnItems.addLayer(layer);
+            var coordinates = layer.getLatLngs();
+            polygonCoordinates = coordinates;
+            alert('Polygon coordinates: ' + JSON.stringify(coordinates));
+        });
+
+        // Function to download data as a JSON file
+        function download(data, filename, type) {
+            var file = new Blob([data], { type: type });
+            var a = document.createElement("a"),
+                url = URL.createObjectURL(file);
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function () {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 0);
+        }
+
+        // Add event listener to the download button
+        document.getElementById('downloadBtn').addEventListener('click', function () {
+            if (polygonCoordinates.length === 0) {
+                alert('No polygon coordinates to download!');
+                return;
+            }
+
+            var data = JSON.stringify(polygonCoordinates, null, 2);
+            download(data, 'polygon_coordinates.json', 'application/json');
+        });
+    </script>
+</body>
+</html>
